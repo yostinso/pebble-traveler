@@ -26,8 +26,12 @@ void handle_init(AppContextRef ctx) {
   t_text_layer_init(&time_layer, "Huh", GRect(0, 5, 144, 24));
   //battery_layer_init(&battery_layer, 20, GRect(120, 17, 20, 10));
 
-  transit_layer_init(&transit_layer_1, GRect(5, 35, PEBBLE_WIDTH/2-10, PEBBLE_WIDTH/2), "WATX");
-  transit_layer_init(&transit_layer_2, GRect(PEBBLE_WIDTH/2+5, 35, PEBBLE_WIDTH/2-10, PEBBLE_WIDTH/2), "HEYY");
+  transit_layer_init(&transit_layer_1, GRect(5, 35, PEBBLE_WIDTH/2-10, PEBBLE_WIDTH/2), "22");
+  transit_layer_init(&transit_layer_2, GRect(PEBBLE_WIDTH/2+5, 35, PEBBLE_WIDTH/2-10, PEBBLE_WIDTH/2), "N");
+
+  transit_layer_set_direction(&transit_layer_1, TRANSIT_DIR_OUTBOUND);
+  transit_layer_set_terminus(&transit_layer_1, "The Quick Brown Fox Jumps Over The Lazy Dog");
+  transit_layer_set_eta(&transit_layer_1, 12);
 
   layer_add_child(&window.layer, &time_layer.layer.layer);
   //layer_add_child(&window.layer, &battery_layer.layer);
