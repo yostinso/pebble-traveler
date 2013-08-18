@@ -6,6 +6,9 @@
 //#include "battery_layer.h"
 #include "transit_layer.h"
 
+// TODO Real data from phone
+// TODO Select button changes inbound/outbound
+// TODO Keep an array of layers, up/down scrolls them
 
 #define MY_UUID { 0xE0, 0x93, 0x49, 0x61, 0x16, 0x0A, 0x43, 0x15, 0xAA, 0x0E, 0xDB, 0x8F, 0x7B, 0x6D, 0x6E, 0xB9 }
 PBL_APP_INFO(MY_UUID,
