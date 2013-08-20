@@ -1,10 +1,8 @@
 #ifndef __TRANSIT_LAYER_H
 #define __TRANSIT_LAYER_H
 
-enum transit_direction {
-  TRANSIT_DIR_INBOUND,
-  TRANSIT_DIR_OUTBOUND
-};
+#include "traveler.h"
+
 static const char DIRECTIONS[2][5] = {
   [TRANSIT_DIR_INBOUND] =  "In: ",
   [TRANSIT_DIR_OUTBOUND] = "Out:"
