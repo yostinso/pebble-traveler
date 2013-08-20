@@ -13,7 +13,6 @@
 // TODO Select button changes inbound/outbound
 // TODO Keep an array of layers, up/down scrolls them
 
-#define MY_UUID { 0xE0, 0x93, 0x49, 0x61, 0x16, 0x0A, 0x43, 0x15, 0xAA, 0x0E, 0xDB, 0x8F, 0x7B, 0x6D, 0x6E, 0xB9 }
 PBL_APP_INFO(MY_UUID,
              "Traveler", "Aradine",
              0, 1, /* App version */
@@ -74,12 +73,14 @@ void pbl_main(void *params) {
 }
 
 bool dict_to_line_info(DictionaryIterator *iter, LineInfo *line_info) {
+  // FYI: uint32_t is big-endian (e.g. 0x01 + 0x02 + 0x04 + 0x08 == 0x01020408)
   Tuple *tuple = dict_find(iter, LINE_DICT_KEY);
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Processing a message");
   if (tuple) {
     if (tuple->length != sizeof(LineInfo)) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "LineInfo dict value is not the same size as LineInfo: %d != %d", tuple->length, sizeof(LineInfo));
+      APP_LOG(APP_LOG_LEVEL_ERROR, "LineInfo dict value is not the same size as LineInfo: %d != %d...", tuple->length, sizeof(LineInfo));
     } else if (tuple->type != TUPLE_BYTE_ARRAY) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "LineInfo dict value is not the same type as LineInfo: %d != %d", tuple->type, TUPLE_BYTE_ARRAY);
+      APP_LOG(APP_LOG_LEVEL_ERROR, "LineInfo dict value is not the same type as LineInfo: %d != %d...", tuple->type, TUPLE_BYTE_ARRAY);
     } else {
       memcpy(line_info, tuple->value->data, tuple->length);
       return true;
@@ -98,13 +99,13 @@ void lines_add(LineInfo *new_line) {
   for (i = 0; i < num_lines; i++) {
     if (strcmp(lines[i].line, new_line->line) == 0) {
       // Exists, overwrite
-      memcpy(&lines[num_lines++], new_line, sizeof(LineInfo));
+      lines[num_lines++] = *new_line;
       return;
     }
   }
   // New entry
-  if (i < num_lines) {
-    memcpy(&lines[num_lines++], new_line, sizeof(LineInfo));
+  if (num_lines < MAX_LINES) {
+    lines[num_lines++] = *new_line;
   } else {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Unable to add line %s; max lines added", new_line->line);
   }
@@ -113,7 +114,7 @@ void lines_add(LineInfo *new_line) {
 void lines_remove_at_index(int index) {
   num_lines--;
   for (unsigned int i = index; i < num_lines; i++) {
-    memcpy(&lines[i], &lines[i+1], sizeof(LineInfo));
+    lines[i] = lines[i+1];
   }
 }
 
@@ -130,6 +131,8 @@ void log_lines() {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Logging %d lines", num_lines);
   for (unsigned int i = 0; i < num_lines; i++) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "  %s", lines[i].line);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "    In:  %s - %d.", lines[i].inbound.terminus, lines[i].inbound.eta);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "    Out: %s - %d.", lines[i].outbound.terminus, lines[i].outbound.eta);
   }
 }
 
@@ -139,6 +142,8 @@ void line_recvd_handler(DictionaryIterator *recvd, void *context) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Adding a received line: %s", li.line);
     lines_add(&li);
   }
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Finished recvd handler");
+  log_lines();
 }
 
 void line_recvd_failed(void *context, AppMessageResult reason) {

@@ -12,7 +12,7 @@ typedef struct {
   Layer layer; // If the layer is first, we can treat this struct as a "subclass" of Layer
   char title[4];
   enum transit_direction direction;
-  char terminus[5];
+  char terminus[4];
   char eta_s[4+1+5]; // 4 digits, 1 space, 5 chars for "mins\0"
 } TransitLayer;
 
