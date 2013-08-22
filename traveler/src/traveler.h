@@ -26,7 +26,8 @@ typedef struct {
 void lines_clear();
 void lines_add(LineInfo *new_line);
 void lines_remove(const char *name);
-void lines_remove_at_index(int index);
+void lines_remove_at_index(unsigned int index);
+void lines_changed();
 
 void line_recvd_handler(DictionaryIterator *recvd, void *context);
 void line_recvd_failed(void *context, AppMessageResult reason);

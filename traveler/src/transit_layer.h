@@ -14,6 +14,7 @@ typedef struct {
   enum transit_direction direction;
   char terminus[4];
   char eta_s[4+1+5]; // 4 digits, 1 space, 5 chars for "mins\0"
+  bool hidden;
 } TransitLayer;
 
 void transit_layer_init(TransitLayer *tl, GRect bounds, const char *title);
@@ -29,13 +30,16 @@ void _transit_layer_draw_endpoint(TransitLayer *tl, GContext *ctx);
 void transit_layer_init(TransitLayer *tl, GRect bounds, const char *title) {
   layer_init(&tl->layer, bounds);
   transit_layer_set_title(tl, title);
+  tl->hidden = false;
   layer_set_update_proc(&tl->layer, (LayerUpdateProc)transit_layer_update_proc);
 }
 
 void transit_layer_update_proc(TransitLayer *tl, GContext *ctx) {
   _transit_layer_draw_border(tl, ctx);
-  _transit_layer_draw_title(tl, ctx);
-  _transit_layer_draw_endpoint(tl, ctx);
+  if (!tl->hidden) {
+    _transit_layer_draw_title(tl, ctx);
+    _transit_layer_draw_endpoint(tl, ctx);
+  }
 }
 
 bool transit_layer_set_title(TransitLayer *tl, const char *title) {
@@ -62,8 +66,10 @@ bool transit_layer_set_direction(TransitLayer *tl, enum transit_direction direct
 }
 
 bool transit_layer_set_terminus(TransitLayer *tl, const char *terminus) {
-  if (terminus == NULL && strlen(terminus) == 0) {
+  if (terminus == NULL || strlen(terminus) == 0) {
     strcpy(tl->terminus, "");
+  } else if (strlen(terminus) < sizeof(tl->terminus)) {
+    strncpy(tl->terminus, terminus, sizeof(tl->terminus)-1);
   } else {
     // Copy initials to tl->terminus
     size_t t_i = 0, i;
@@ -112,6 +118,16 @@ bool transit_layer_set_eta(TransitLayer *tl, unsigned int eta) {
 
   layer_mark_dirty(&tl->layer);
   return true;
+}
+
+void transit_layer_hide(TransitLayer *tl) {
+  tl->hidden = true;
+  layer_mark_dirty(&tl->layer);
+}
+
+void transit_layer_show(TransitLayer *tl) {
+  tl->hidden = false;
+  layer_mark_dirty(&tl->layer);
 }
 
 void _transit_layer_draw_border(TransitLayer *tl, GContext *ctx) {

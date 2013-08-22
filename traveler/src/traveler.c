@@ -22,9 +22,10 @@ PBL_APP_INFO(MY_UUID,
 
 Window window;
 TextLayerWithString time_layer;
-TransitLayer transit_layer_1, transit_layer_2;
+TransitLayer transit_layers[2];
 LineInfo lines[MAX_LINES];
 unsigned int num_lines = 0;
+unsigned int displayed_lines[2] = { 0, 1 };
 static const uint32_t LINE_DICT_KEY = 0x00000101;
 
 void handle_init(AppContextRef ctx) {
@@ -33,16 +34,14 @@ void handle_init(AppContextRef ctx) {
 
   t_text_layer_init(&time_layer, "Huh", GRect(0, 5, 144, 24));
 
-  transit_layer_init(&transit_layer_1, GRect(5, 35, PEBBLE_WIDTH/2-10, PEBBLE_WIDTH/2), "22");
-  transit_layer_init(&transit_layer_2, GRect(PEBBLE_WIDTH/2+5, 35, PEBBLE_WIDTH/2-10, PEBBLE_WIDTH/2), "N");
+  transit_layer_init(&transit_layers[0], GRect(5, 35, PEBBLE_WIDTH/2-10, PEBBLE_WIDTH/2), "22");
+  transit_layer_init(&transit_layers[1], GRect(PEBBLE_WIDTH/2+5, 35, PEBBLE_WIDTH/2-10, PEBBLE_WIDTH/2), "N");
 
-  transit_layer_set_direction(&transit_layer_1, TRANSIT_DIR_OUTBOUND);
-  transit_layer_set_terminus(&transit_layer_1, "The Quick Brown Fox Jumps Over The Lazy Dog");
-  transit_layer_set_eta(&transit_layer_1, 12);
+  lines_changed();
 
   layer_add_child(&window.layer, &time_layer.layer.layer);
-  layer_add_child(&window.layer, &transit_layer_1.layer);
-  layer_add_child(&window.layer, &transit_layer_2.layer);
+  layer_add_child(&window.layer, &transit_layers[0].layer);
+  layer_add_child(&window.layer, &transit_layers[1].layer);
 }
 
 void handle_tick(AppContextRef ctx, PebbleTickEvent *event) {
@@ -91,6 +90,7 @@ bool dict_to_line_info(DictionaryIterator *iter, LineInfo *line_info) {
 
 void lines_clear() {
   num_lines = 0;
+  lines_changed();
 }
 
 void lines_add(LineInfo *new_line) {
@@ -106,15 +106,19 @@ void lines_add(LineInfo *new_line) {
   // New entry
   if (num_lines < MAX_LINES) {
     lines[num_lines++] = *new_line;
+    lines_changed();
   } else {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Unable to add line %s; max lines added", new_line->line);
   }
 }
 
-void lines_remove_at_index(int index) {
-  num_lines--;
-  for (unsigned int i = index; i < num_lines; i++) {
-    lines[i] = lines[i+1];
+void lines_remove_at_index(unsigned int index) {
+  if (index < num_lines) {
+    num_lines--;
+    for (unsigned int i = index; i < num_lines; i++) {
+      lines[i] = lines[i+1];
+    }
+    lines_changed();
   }
 }
 
@@ -142,10 +146,49 @@ void line_recvd_handler(DictionaryIterator *recvd, void *context) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Adding a received line: %s", li.line);
     lines_add(&li);
   }
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Finished recvd handler");
-  log_lines();
 }
 
 void line_recvd_failed(void *context, AppMessageResult reason) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Line update failed: %d", reason);
 }
+void lines_changed() {
+  // Find places to point the line displays
+  for (int dl = 0; dl < 2; dl++) {
+    if (displayed_lines[dl] >= num_lines) {
+      int dl_other = dl == 0 ? 1 : 0;
+      displayed_lines[dl] = 0;
+      for (unsigned int i = 0; i < num_lines; i++) {
+        if (displayed_lines[dl_other] != i) {
+          displayed_lines[dl] = i;
+          break;
+        }
+      }
+    }
+  }
+  // Fix the order/overlap
+  if (displayed_lines[0] >= displayed_lines[1]) {
+    displayed_lines[0] = displayed_lines[1];
+    displayed_lines[1]++;
+  }
+
+  // Update the rendering layers
+  for (int dl = 0; dl < 2; dl++) {
+    if (displayed_lines[dl] < num_lines) {
+      LineInfo *line = &lines[displayed_lines[dl]];
+      enum transit_direction dir = TRANSIT_DIR_OUTBOUND; // TODO: Select inbound/outbound
+
+      TerminusInfo *terminus = (dir == TRANSIT_DIR_INBOUND) ? &line->inbound : &line->outbound;
+
+      transit_layer_set_direction(&transit_layers[dl], dir);
+      transit_layer_set_title(&transit_layers[dl], line->line);
+      transit_layer_set_terminus(&transit_layers[dl], terminus->terminus);
+      transit_layer_set_eta(&transit_layers[dl], terminus->eta);
+      transit_layer_show(&transit_layers[dl]);
+    } else {
+      transit_layer_hide(&transit_layers[dl]);
+    }
+  }
+
+  log_lines();
+}
+
