@@ -21,6 +21,7 @@ void transit_layer_init(TransitLayer *tl, GRect bounds, const char *title);
 void transit_layer_update_proc(TransitLayer *tl, GContext *ctx);
 bool transit_layer_set_title(TransitLayer *tl, const char *title);
 bool transit_layer_set_direction(TransitLayer *tl, enum transit_direction direction);
+enum transit_direction transit_layer_get_direction(TransitLayer *tl) { return tl->direction; }
 bool transit_layer_set_terminus(TransitLayer *tl, const char *terminus);
 bool transit_layer_set_eta(TransitLayer *tl, unsigned int eta);
 void _transit_layer_draw_border(TransitLayer *tl, GContext *ctx);

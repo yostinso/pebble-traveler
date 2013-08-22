@@ -49,6 +49,23 @@ void handle_tick(AppContextRef ctx, PebbleTickEvent *event) {
   set_time(&time_layer, t, NULL);
 }
 
+void handle_btn_down(void *context, PebbleButtonEvent *evt) {
+  switch (evt->button_id) {
+    case BUTTON_ID_SELECT:
+      // Toggle inbound/outbound
+      for (int i = 0; i < 2; i++) {
+        transit_layer_set_direction(
+          &transit_layers[i],
+          (transit_layer_get_direction(&transit_layers[i]) == TRANSIT_DIR_INBOUND) ? TRANSIT_DIR_OUTBOUND : TRANSIT_DIR_INBOUND
+        );
+      }
+      lines_changed();
+      break;
+    default:
+      break;
+  }
+}
+
 void pbl_main(void *params) {
   const uint32_t line_info_dict_size = dict_calc_buffer_size(1, sizeof(LineInfo));
   PebbleAppHandlers handlers = {
@@ -63,8 +80,13 @@ void pbl_main(void *params) {
         .outbound = 16
       },
       .default_callbacks.callbacks = {
-        .in_received = line_recvd_handler,
-        .in_dropped =  line_recvd_failed
+        .in_received = handle_line_recvd,
+        .in_dropped =  handle_recv_failed
+      }
+    },
+    .input_handlers = {
+      .buttons = {
+        .down = handle_btn_down
       }
     }
   };
@@ -140,7 +162,7 @@ void log_lines() {
   }
 }
 
-void line_recvd_handler(DictionaryIterator *recvd, void *context) {
+void handle_line_recvd(DictionaryIterator *recvd, void *context) {
   LineInfo li;
   if (dict_to_line_info(recvd, &li)) {
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Adding a received line: %s", li.line);
@@ -148,7 +170,7 @@ void line_recvd_handler(DictionaryIterator *recvd, void *context) {
   }
 }
 
-void line_recvd_failed(void *context, AppMessageResult reason) {
+void handle_recv_failed(void *context, AppMessageResult reason) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Line update failed: %d", reason);
 }
 void lines_changed() {
@@ -175,7 +197,7 @@ void lines_changed() {
   for (int dl = 0; dl < 2; dl++) {
     if (displayed_lines[dl] < num_lines) {
       LineInfo *line = &lines[displayed_lines[dl]];
-      enum transit_direction dir = TRANSIT_DIR_OUTBOUND; // TODO: Select inbound/outbound
+      enum transit_direction dir = transit_layer_get_direction(&transit_layers[dl]); // TODO: Select inbound/outbound
 
       TerminusInfo *terminus = (dir == TRANSIT_DIR_INBOUND) ? &line->inbound : &line->outbound;
 

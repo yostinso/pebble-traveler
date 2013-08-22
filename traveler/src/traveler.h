@@ -1,7 +1,7 @@
 #ifndef __TRAVELER_H
 #define __TRAVELER_H
 #define MY_UUID { 0xE0, 0x93, 0x49, 0x61, 0x16, 0x0A, 0x43, 0x15, 0xAA, 0x0E, 0xDB, 0x8F, 0x7B, 0x6D, 0x6E, 0xB9 }
-// E0:93:49:61:16:0A:43:15:AA:0E:DB:8F:7B:6D:6E:B9
+// E0934961160A4315AA0EDB8F7B6D6EB9
 
 #define PEBBLE_WIDTH 144
 #define PEBBLE_HEIGHT 168
@@ -29,8 +29,9 @@ void lines_remove(const char *name);
 void lines_remove_at_index(unsigned int index);
 void lines_changed();
 
-void line_recvd_handler(DictionaryIterator *recvd, void *context);
-void line_recvd_failed(void *context, AppMessageResult reason);
+void handle_line_recvd(DictionaryIterator *recvd, void *context);
+void handle_recv_failed(void *context, AppMessageResult reason);
+void handle_btn_down(void *context, PebbleButtonEvent *evt);
 bool dict_to_line_info(DictionaryIterator *iter, LineInfo *line_info);
 
 void log_lines(); // XXX DEBUG
