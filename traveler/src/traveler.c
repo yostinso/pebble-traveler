@@ -25,7 +25,7 @@ TextLayerWithString time_layer;
 TransitLayer transit_layers[2];
 LineInfo lines[MAX_LINES];
 unsigned int num_lines = 0;
-unsigned int displayed_lines[2] = { 0, 1 };
+unsigned int scroll_offset = 0;
 static const uint32_t LINE_DICT_KEY = 0x00000101;
 
 void handle_init(AppContextRef ctx) {
@@ -59,6 +59,16 @@ void handle_btn_down(void *context, PebbleButtonEvent *evt) {
           (transit_layer_get_direction(&transit_layers[i]) == TRANSIT_DIR_INBOUND) ? TRANSIT_DIR_OUTBOUND : TRANSIT_DIR_INBOUND
         );
       }
+      lines_changed();
+      break;
+    case BUTTON_ID_UP:
+      // Scroll lines up
+      scroll_offset--;
+      lines_changed(); // will rebalance scroll_offset if necessary
+      break;
+    case BUTTON_ID_DOWN:
+      // Scroll lines down
+      scroll_offset++;
       lines_changed();
       break;
     default:
@@ -175,22 +185,22 @@ void handle_recv_failed(void *context, AppMessageResult reason) {
 }
 void lines_changed() {
   // Find places to point the line displays
-  for (int dl = 0; dl < 2; dl++) {
-    if (displayed_lines[dl] >= num_lines) {
-      int dl_other = dl == 0 ? 1 : 0;
-      displayed_lines[dl] = 0;
-      for (unsigned int i = 0; i < num_lines; i++) {
-        if (displayed_lines[dl_other] != i) {
-          displayed_lines[dl] = i;
-          break;
-        }
-      }
-    }
+  if (scroll_offset > MAX_LINES) {
+    // We wrapped going negative (unsigned int...)
+    scroll_offset = num_lines - 1;
+  } else if (scroll_offset >= num_lines) {
+    // We wrapped off the top
+    scroll_offset = 0;
   }
-  // Fix the order/overlap
-  if (displayed_lines[0] >= displayed_lines[1]) {
-    displayed_lines[0] = displayed_lines[1];
-    displayed_lines[1]++;
+
+  unsigned int displayed_lines[2] = { scroll_offset, 0 };
+
+  // Second display:
+  displayed_lines[1] = scroll_offset + 1;
+  if (displayed_lines[1] > MAX_LINES) {
+    displayed_lines[1] = num_lines - 1;
+  } else if (displayed_lines[1] >= num_lines && displayed_lines[0] != 0) {
+    displayed_lines[1] = 0;
   }
 
   // Update the rendering layers
