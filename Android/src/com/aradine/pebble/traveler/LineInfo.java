@@ -1,7 +1,5 @@
 package com.aradine.pebble.traveler;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,7 +33,7 @@ public class LineInfo {
 			this.terminus = trim(terminus, 3);
 		}
 		public String getTerminus() {
-			return line;
+			return terminus;
 		}
 		private void setEta(int eta) {
 			this.eta = eta;
@@ -89,7 +87,7 @@ public class LineInfo {
 		PebbleDictionary d = new PebbleDictionary();
 		// line,inb_term,inb_eta,out_term,out_eta
 		// xxx.III.nnnnOOO.nnnn
-		ByteBuffer b = ByteBuffer.allocate(20).order(ByteOrder.LITTLE_ENDIAN);
+		ByteBuffer b = ByteBuffer.allocate(DICT_LEN).order(ByteOrder.LITTLE_ENDIAN);
 			
 		b.position(0);
 		try {
