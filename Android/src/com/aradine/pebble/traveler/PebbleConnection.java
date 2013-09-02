@@ -237,4 +237,9 @@ public class PebbleConnection {
 		}
 		return transactionId;
 	}
+	
+	// TODO: Try to keep track of local state as compared to what's on the watch
+	// TODO: Need a clear() method on the watch and a relevant message
+	// TODO: Figure out how to active the watch app
+	// TODO: Need a ping() method on the watch and a relevant message which we can use to see if the app is running
 }
